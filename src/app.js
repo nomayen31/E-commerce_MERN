@@ -3,7 +3,8 @@ const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const createError = require('http-errors');
 const xssClean = require('xss-clean')
-const rateLimit = require('express-rate-limit')
+const rateLimit = require('express-rate-limit');
+const userRouter = require("./routers/userRouter");
 
 
 const app =express();
@@ -19,17 +20,16 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
 
+app.use("/api/users",userRouter);
+
+
 app.get("/test",(req, res)=>{
     res.status(200).send({
         message:'api is working fine',
     });
 })
-app.get("/api/users",(req, res)=>{
-    console.log(req.body.id);
-    res.status(200).send({
-        message:'User profile is return',
-    });
-})
+
+
 // client error handling 
 app.use((req,res,next)=>{
     // res.status(404).json({message: 'route not found'})
