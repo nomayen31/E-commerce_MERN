@@ -1,11 +1,16 @@
 const createError = require('http-errors');
 const User = require('../models/userModels');
+const findItem = require('../services/findItem');
 const { successResponse } = require('./responseController');
+const fs = require('fs').promises;
+const { error } = require('console');
+const deleteImage = require('../helper/deleteImage');
+
 const getUsers = async (req, res, next) => {
     try {
         const search = req.query.search || "";
         const page = Number(req.query.page) || 1;
-        const limit = Number(req.query.limit) || 1;
+        const limit = Number(req.query.limit) || 5;
 
         const searchRegExp = new RegExp('.*' + search + ".*", 'i');
 
@@ -29,7 +34,7 @@ const getUsers = async (req, res, next) => {
 
         return successResponse(res, {
             statusCode: 200,
-            message: 'User were is returned successfully',
+            message: 'Users were is returned successfully',
             payload: {
                 users,
                 pagination: {
@@ -46,4 +51,82 @@ const getUsers = async (req, res, next) => {
     }
 };
 
-module.exports = { getUsers }
+const getUserById = async (req, res, next) => {
+    try {
+
+        const id = req.params.id;
+        const options = { password: 0 };
+        const user = await findItem.findWithId(User, id, options)
+
+
+        return successResponse(res, {
+            statusCode: 200,
+            message: 'User were is returned successfully',
+            payload: { user },
+        });
+
+    } catch (error) {
+
+        next(error);
+    }
+};
+
+
+const deleteUserById = async (req, res, next) => {
+    try {
+
+        const id = req.params.id;
+        const options = { password: 0 };
+        const user = await findItem.findWithId(User, id, options);
+
+        const userImagePath = user.image;
+
+
+        deleteImage(userImagePath);
+
+        await User.findByIdAndDelete({ _id: id, isAdmin: false })
+
+
+        return successResponse(res, {
+            statusCode: 200,
+            message: 'User was is delete successfully',
+        });
+
+    } catch (error) {
+
+        next(error);
+    }
+};
+
+
+const processRegister = async (req, res, next) => {
+    try {
+
+        const { name, phone, password, email, address } = req.body;
+
+        const userExist = await User.exists({ email: email })
+        if (userExist) {
+            throw createError(409, 'user with this email please sign in')
+        }
+
+        const newUser = {
+            name,
+            phone,
+            password,
+            email,
+            address,
+
+        }
+        return successResponse(res, {
+            statusCode: 200,
+            message: 'User was created successfully',
+            payload: { newUser }
+        });
+
+    } catch (error) {
+
+        next(error);
+    }
+};
+
+module.exports = { getUsers, getUserById, deleteUserById, processRegister }
