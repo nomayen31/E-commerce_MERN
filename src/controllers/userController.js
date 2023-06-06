@@ -5,6 +5,8 @@ const { successResponse } = require('./responseController');
 const fs = require('fs').promises;
 const { error } = require('console');
 const deleteImage = require('../helper/deleteImage');
+const { createJsonWebToken } = require('../helper/jsonwebtoken');
+const { jwtActivationKey } = require('../secret');
 
 const getUsers = async (req, res, next) => {
     try {
@@ -106,21 +108,18 @@ const processRegister = async (req, res, next) => {
 
         const userExist = await User.exists({ email: email })
         if (userExist) {
-            throw createError(409, 'user with this email please sign in')
+            throw createError(409, 'user with this email already exits.... please sign in')
         }
 
-        const newUser = {
-            name,
-            phone,
-            password,
-            email,
-            address,
-
-        }
+        // jwt 
+        const token =  createJsonWebToken(
+            { name, phone, password, email, address },jwtActivationKey, '10m' )
+        console.log(token);
+    
         return successResponse(res, {
             statusCode: 200,
             message: 'User was created successfully',
-            payload: { newUser }
+            payload: { token }
         });
 
     } catch (error) {
